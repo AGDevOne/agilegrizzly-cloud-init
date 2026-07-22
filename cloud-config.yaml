@@ -1,0 +1,73 @@
+#cloud-config
+# AgileGrizzly base node configuration (PUBLIC).
+#
+# This file is world-readable. It MUST NOT contain any secret material:
+# no users, no SSH keys, no passwords, no tokens, no hostnames or IPs that
+# identify a specific deployment. It is consumed at first boot via cloud-init
+# `#include` from a pinned commit of the public GitHub mirror. The admin user,
+# SSH authorized_keys, and any credentials are injected separately from the
+# encrypted secret store as a private inline cloud-config part (never here).
+#
+# Keep this in sync with the Ansible bootstrap/hardening playbooks; this is the
+# non-secret subset that is safe to publish.
+
+# Refresh package lists and apply available upgrades on first boot.
+package_update: true
+package_upgrade: true
+
+# Base + security packages (mirrors bootstrap.yml + hardening.yml, minus secrets).
+packages:
+  - curl
+  - wget
+  - git
+  - htop
+  - vim
+  - tmux
+  - jq
+  - unzip
+  - ufw
+  - fail2ban
+  - unattended-upgrades
+
+# Neutral default; the provisioning layer may override per-node.
+timezone: UTC
+
+write_files:
+  # SSH hardening drop-in. Files in sshd_config.d override the main sshd_config.
+  # Root login is left as prohibit-password here (key-only); the finalize stage
+  # fully disables it once the unprivileged admin account is confirmed usable.
+  - path: /etc/ssh/sshd_config.d/60-agilegrizzly-hardening.conf
+    permissions: "0644"
+    content: |
+      # Managed by AgileGrizzly cloud-init (public base config).
+      PermitRootLogin prohibit-password
+      PasswordAuthentication no
+      KbdInteractiveAuthentication no
+      ChallengeResponseAuthentication no
+      X11Forwarding no
+      AllowAgentForwarding no
+      MaxAuthTries 3
+
+  # fail2ban SSH brute-force protection.
+  - path: /etc/fail2ban/jail.d/agilegrizzly-sshd.local
+    permissions: "0644"
+    content: |
+      [sshd]
+      enabled = true
+      port = ssh
+      banaction = iptables-multiport
+
+runcmd:
+  # Host firewall: default-deny incoming, allow SSH (22/tcp) and WireGuard
+  # (51820/udp). Kubernetes ports are opened later, scoped to the overlay
+  # network, by the hardening stage.
+  - ufw default deny incoming
+  - ufw default allow outgoing
+  - ufw allow 22/tcp
+  - ufw allow 51820/udp
+  - ufw --force enable
+  # Enable brute-force protection and unattended security upgrades.
+  - systemctl enable --now fail2ban
+  - systemctl enable --now unattended-upgrades
+  # Apply the SSH hardening drop-in.
+  - systemctl restart ssh || systemctl restart sshd || true

@@ -1,0 +1,11 @@
+# This repo is public and must never carry secrets or local cruft.
+*.env
+.env
+*.pem
+*.key
+id_rsa*
+*.tfvars
+.DS_Store
+Thumbs.db
+*.swp
+*~
