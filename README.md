@@ -50,9 +50,10 @@ user-data is a MIME multipart document combining:
    store, containing the admin user and its `ssh_authorized_keys`. That part is
    never committed here.
 
-IPv4-less (IPv6-only) nodes cannot reach `raw.githubusercontent.com` (no
-reliable IPv6), so for those nodes the provisioning layer embeds the contents of
-the provider's config inline instead of using `#include`.
+`raw.githubusercontent.com` is dual-stack, so the `#include` is fetched over IPv6
+on IPv4-less (IPv6-only) nodes as well (verified against a Hetzner IPv6-only
+node). The provisioning layer keeps a local copy of the provider's config and
+embeds it inline only as a fallback when no pinned URL is configured.
 
 See the per-provider doc under [`docs/`](docs/) for exactly what each config does.
 
