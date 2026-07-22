@@ -1,5 +1,9 @@
 #cloud-config
-# AgileGrizzly base node configuration (PUBLIC).
+# AgileGrizzly base node configuration for HETZNER (PUBLIC).
+#
+# Provider-specific: this file targets Hetzner Cloud nodes. Other providers get
+# their own <provider>-cloud-config.yaml; select the file that matches the node's
+# cloud provider when wiring the cloud-init `#include`.
 #
 # This file is world-readable. It MUST NOT contain any secret material:
 # no users, no SSH keys, no passwords, no tokens, no hostnames or IPs that
@@ -8,8 +12,8 @@
 # SSH authorized_keys, and any credentials are injected separately from the
 # encrypted secret store as a private inline cloud-config part (never here).
 #
-# Keep this in sync with the Ansible bootstrap/hardening playbooks; this is the
-# non-secret subset that is safe to publish.
+# Keep this in sync with the Hetzner Ansible bootstrap/hardening playbooks; this
+# is the non-secret subset that is safe to publish.
 
 # Refresh package lists and apply available upgrades on first boot.
 package_update: true
